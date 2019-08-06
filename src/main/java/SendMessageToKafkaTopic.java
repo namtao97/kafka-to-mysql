@@ -6,6 +6,7 @@ public class SendMessageToKafkaTopic {
         String bootstrapServer = "localhost:9092";
         String topic = "test";
 
+        // a simple Producer for testing Consumer
         Producer producer = new Producer(bootstrapServer, topic);
         producer.sendMessages(10); // producer send 10 random messages to kafka topic
         producer.close();

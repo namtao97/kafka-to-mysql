@@ -24,7 +24,6 @@ public class ConsumerThread implements Runnable{
 
     private OffsetManager offsetManager;
 
-    private final String urlDB = "jdbc:mysql://localhost:3306/kafka?useSSL=false";
     private String usernameDB = "cm9vdA==";
     private String passwordDB = "bmFtbnQ=";
 
@@ -62,7 +61,7 @@ public class ConsumerThread implements Runnable{
     private void insertToDB(List<ConsumerRecord<String, MessageObject>> records) {
         String query = "INSERT INTO `message`(`msg`, `time`) value (?, ?)";
 
-        try (Connection connection = DriverManager.getConnection(this.urlDB, this.usernameDB, this.passwordDB);
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/kafka?useSSL=false", this.usernameDB, this.passwordDB);
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             connection.setAutoCommit(false);
