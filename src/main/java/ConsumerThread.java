@@ -10,10 +10,7 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.sql.*;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 
@@ -27,6 +24,10 @@ public class ConsumerThread implements Runnable{
 
     private OffsetManager offsetManager;
 
+    private final String urlDB = "jdbc:mysql://localhost:3306/kafka?useSSL=false";
+    private String usernameDB = "cm9vdA==";
+    private String passwordDB = "bmFtbnQ=";
+
 
     public ConsumerThread(String bootstrapServer, String groupID, String topic, CountDownLatch latch, String storagePrefix, long minBatchSize) {
         this.latch = latch;
@@ -38,6 +39,9 @@ public class ConsumerThread implements Runnable{
         Properties properties = setConsumerProperties(bootstrapServer, groupID);
         this.consumer = new KafkaConsumer<>(properties, new StringDeserializer(), new JsonDeserializer<>(MessageObject.class));
         this.consumer.subscribe(Collections.singletonList(topic), new MyConsumerRebalanceListener(consumer, storagePrefix));
+
+        this.usernameDB = new String(Base64.getDecoder().decode(this.usernameDB));
+        this.passwordDB = new String(Base64.getDecoder().decode(this.passwordDB));
     }
 
     private Properties setConsumerProperties(String bootstrapServer, String groupID) {
@@ -58,7 +62,7 @@ public class ConsumerThread implements Runnable{
     private void insertToDB(List<ConsumerRecord<String, MessageObject>> records) {
         String query = "INSERT INTO `message`(`msg`, `time`) value (?, ?)";
 
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/kafka?useSSL=false", "root", "namnt");
+        try (Connection connection = DriverManager.getConnection(this.urlDB, this.usernameDB, this.passwordDB);
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             connection.setAutoCommit(false);
