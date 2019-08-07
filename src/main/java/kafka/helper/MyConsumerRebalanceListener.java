@@ -1,3 +1,6 @@
+package kafka.helper;
+
+import common.MessageObject;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
@@ -10,10 +13,12 @@ public class MyConsumerRebalanceListener implements ConsumerRebalanceListener {
     private OffsetManager offsetManager;
     private KafkaConsumer<String, MessageObject> consumer;
 
-    public MyConsumerRebalanceListener(KafkaConsumer<String, MessageObject> consumer, String storagePrefix) {
+
+    public MyConsumerRebalanceListener(KafkaConsumer<String, MessageObject> consumer, OffsetManager offsetManager) {
         this.consumer = consumer;
-        this.offsetManager = new OffsetManager(storagePrefix);
+        this.offsetManager = offsetManager;
     }
+
 
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
@@ -21,6 +26,7 @@ public class MyConsumerRebalanceListener implements ConsumerRebalanceListener {
             offsetManager.saveOffsetInExternalStore(partition.topic(), partition.partition(), consumer.position(partition));
         }
     }
+
 
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> partitions) {

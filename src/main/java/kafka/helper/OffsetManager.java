@@ -1,7 +1,10 @@
+package kafka.helper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,11 +17,18 @@ public class OffsetManager {
     private String storagePrefix;
     private Logger logger = LoggerFactory.getLogger(OffsetManager.class.getName());
 
+
     public OffsetManager(String storagePrefix) {
         this.storagePrefix = storagePrefix;
+
+        File file = new File(this.storagePrefix);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
     }
 
-    void saveOffsetInExternalStore(String topic, int partition, long offset) {
+
+    public void saveOffsetInExternalStore(String topic, int partition, long offset) {
         try {
             FileWriter writer = new FileWriter(storageName(topic, partition), false);
             BufferedWriter bufferedWriter = new BufferedWriter(writer);
@@ -30,7 +40,8 @@ public class OffsetManager {
         }
     }
 
-    long readOffsetFromExternalStore(String topic, int partition) {
+
+    public long readOffsetFromExternalStore(String topic, int partition) {
         try {
             Stream<String> stream = Files.lines(Paths.get(storageName(topic, partition)));
             return Long.parseLong(stream.collect(Collectors.toList()).get(0)) + 1;
@@ -39,6 +50,7 @@ public class OffsetManager {
         }
         return 0;
     }
+
 
     private String storageName(String topic, int partition) {
         return storagePrefix + "\\" + topic + "-" + partition + ".txt";
