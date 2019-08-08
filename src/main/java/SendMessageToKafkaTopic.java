@@ -1,16 +1,19 @@
 import kafka.producerClient.Producer;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 
 public class SendMessageToKafkaTopic {
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
-        String bootstrapServer = "localhost:9092";
-        String topic = "test";
+    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
+        String configFile = "src\\main\\resources\\Producer.properties";
+        Properties properties = new Properties();
+        properties.load(new FileInputStream(configFile));
 
-        // a simple kafka.producerClient.Producer for testing Consumer
-        Producer producer = new Producer(bootstrapServer, topic);
+        Producer producer = new Producer(properties);
         producer.sendMessages(10); // producer send 10 random messages to kafka topic
         producer.close();
     }

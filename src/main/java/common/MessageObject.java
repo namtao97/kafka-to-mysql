@@ -10,12 +10,12 @@ public class MessageObject {
     private static final String CHAR_UPPER = CHAR_LOWER.toUpperCase();
     private static final String DATA = CHAR_LOWER + CHAR_UPPER;
 
-    private String msg;
+    private String message;
     private long time;
 
 
     public MessageObject(String message, long time) {
-        this.msg = message;
+        this.message = message;
         this.time = time;
     }
 
@@ -23,7 +23,7 @@ public class MessageObject {
 
 
     public String getMessage() {
-        return this.msg;
+        return this.message;
     }
 
 
@@ -33,7 +33,7 @@ public class MessageObject {
 
 
     public void setMessage(String message) {
-        this.msg = message;
+        this.message = message;
     }
 
 
@@ -66,7 +66,7 @@ public class MessageObject {
     @Override
     public String toString() {
         return "Message{" +
-                "msg=\'" + this.msg + "\'" +
+                "message=\'" + this.message + "\'" +
                 ", time=" + this.time +
                 "}";
     }

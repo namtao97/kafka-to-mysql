@@ -4,9 +4,9 @@ import common.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
 
@@ -15,23 +15,18 @@ public class ConsumerGroup {
     private final Logger logger = LoggerFactory.getLogger(ConsumerGroup.class.getName());
     private CountDownLatch latch;
     private List<Consumer> consumers = new ArrayList<>();
+    private Database database;
 
     private final String bootstrapServer;
     private final String groupID;
     private final String topic;
 
 
-    public ConsumerGroup(String bootstrapServer, String groupID, String topic) {
-        this.bootstrapServer = bootstrapServer;
-        this.groupID = groupID;
-        this.topic = topic;
-
-        String storagePrefix = "storage-offset";
-
-        File file = new File(storagePrefix);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
+    public ConsumerGroup(Properties properties, Database database) {
+        this.bootstrapServer = properties.getProperty("bootstrap.servers");
+        this.groupID = properties.getProperty("group.id");
+        this.topic = properties.getProperty("topic");
+        this.database = database;
     }
 
 
@@ -64,13 +59,13 @@ public class ConsumerGroup {
             }
 
             await(this.latch);
-            Database.shutdown();
+            database.shutdown();
 
             logger.info("Consumer Group has exited");
         }));
 
         await(latch);
-        Database.shutdown();
+        database.shutdown();
     }
 
 

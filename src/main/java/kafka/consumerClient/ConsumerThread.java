@@ -2,12 +2,10 @@ package kafka.consumerClient;
 
 import common.Database;
 import common.MessageObject;
-import kafka.helper.MyConsumerRebalanceListener;
-import kafka.helper.OffsetManager;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
@@ -28,26 +26,24 @@ public class ConsumerThread implements Consumer {
     private String topic;
     private String groupID;
     private KafkaConsumer<String, MessageObject> consumer;
-    private List<ConsumerRecord<String, MessageObject>> buffer;
+    private List<ConsumerRecord<String, MessageObject>> buffer = new ArrayList<>();
 
     private long minBatchSize;
     private CountDownLatch latch;
-    private OffsetManager offsetManager;
+    private Database database;
 
 
-    public ConsumerThread(String bootstrapServer, String groupID, String topic, OffsetManager offsetManager, long minBatchSize) {
-        this.minBatchSize = minBatchSize;
-        this.offsetManager = offsetManager;
+    public ConsumerThread(Properties properties, Database database) {
         this.latch = new CountDownLatch(0); // default is 0 so this consumerThread can run independent
-        this.bootstrapServer = bootstrapServer;
-        this.groupID = groupID;
-        this.topic = topic;
+        this.database = database;
 
-        buffer = new ArrayList<>();
+        this.bootstrapServer = properties.getProperty("bootstrap.servers");
+        this.groupID = properties.getProperty("group.id");
+        this.topic = properties.getProperty("topic");
+        this.minBatchSize = Long.parseLong(properties.getProperty("min.batch.size"));
 
-        Properties properties = setConsumerProperties(this.bootstrapServer, this.groupID);
         this.consumer = new KafkaConsumer<>(properties, new StringDeserializer(), new JsonDeserializer<>(MessageObject.class));
-        this.consumer.subscribe(Collections.singletonList(this.topic), new MyConsumerRebalanceListener(this.consumer, this.offsetManager));
+        this.consumer.subscribe(Collections.singletonList(this.topic), new MyConsumerRebalanceListener(this, this.database));
     }
 
 
@@ -57,15 +53,12 @@ public class ConsumerThread implements Consumer {
             while (true) {
                 ConsumerRecords<String, MessageObject> records = this.consumer.poll(Duration.ofMillis(1000));
 
-                ConsumerRecord<String, MessageObject> lastRecord = null;
                 for (ConsumerRecord<String, MessageObject> record : records) {
                     buffer.add(record);
-                    lastRecord = record;
                 }
 
-                if (buffer.size() >= this.minBatchSize && lastRecord != null) {
-                    Database.insertMessageToDB(buffer);
-                    offsetManager.saveOffsetInExternalStore(lastRecord.topic(), lastRecord.partition(), lastRecord.offset());
+                if (buffer.size() >= this.minBatchSize) {
+                    database.insertMessageToDB(buffer);
                     buffer.clear();
                 }
             }
@@ -74,8 +67,9 @@ public class ConsumerThread implements Consumer {
             logger.info("Received shutdown signal");
         } catch (BatchUpdateException batchUpdateException) {
             logger.error("Batch Update exception", batchUpdateException);
-        } catch (SQLException e) {
-            logger.error("SQL Exception", e);
+        } catch (Exception e) {
+            logger.error("Database Exception", e);
+            e.printStackTrace();
         } finally {
             this.consumer.close();
             this.latch.countDown();
@@ -108,19 +102,18 @@ public class ConsumerThread implements Consumer {
     }
 
 
-    public void shutdown() {
-        this.consumer.wakeup();
+    @Override
+    public long position(TopicPartition partition) {
+        return this.consumer.position(partition);
+    }
+
+    @Override
+    public void seek(TopicPartition partition, long offset) {
+        this.consumer.seek(partition, offset);
     }
 
 
-    private Properties setConsumerProperties(String bootstrapServer, String groupID) {
-        Properties properties = new Properties();
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupID);
-        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, org.springframework.kafka.support.serializer.JsonDeserializer.class.getName());
-        properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-
-        return properties;
+    public void shutdown() {
+        this.consumer.wakeup();
     }
 }

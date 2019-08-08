@@ -1,39 +1,40 @@
+import common.MySQLDatabase;
 import kafka.consumerClient.Consumer;
 import kafka.consumerClient.ConsumerGroup;
 import kafka.consumerClient.ConsumerThread;
-import kafka.helper.OffsetManager;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+
 
 public class ReceiveMessageFromKafkaTopic {
 
-    public static void main(String[] args) {
-        /**
-         * The number of consumer threads is same the numer of topic partitions. In this demo is 3 partitions.
-         * @param bootstrapServer - the address of the message brokers
-         * @param groupID - the group name of the consumer group
-         * @param topic - the topic name of the message brokers
-         * @param numberOfConsumer - number of consumer run in a consumer group
-         * @param minBatchSize - the minimum number of message to insert to database
-        */
-        String bootstrapServer = "localhost:9092";
-        String groupID = "group1";
-        String topic = "test";
-        int numberOfConsumer = 3;
-        int minBatchSize = 1;
+    public static void main(String[] args) throws IOException {
 
-        OffsetManager offsetManager = new OffsetManager("storage-offset");
-        ConsumerGroup consumerGroup = new ConsumerGroup(bootstrapServer, groupID, topic);
+        // create database connection poll
+        String databaseConfig = "src\\main\\resources\\DB.properties";
+        MySQLDatabase database = new MySQLDatabase(databaseConfig);
 
+        String consumerConfig = "src\\main\\resources\\Consumer.properties";
+        Properties consumerProperties = new Properties();
+        consumerProperties.load(new FileInputStream(consumerConfig));
+
+        // create consumer group
+        ConsumerGroup consumerGroup = new ConsumerGroup(consumerProperties, database);
+
+        // create list consumers to the group consumer
         List<Consumer> consumers = new ArrayList<>();
-        for (int i = 0; i < numberOfConsumer; i++) {
-            consumers.add(new ConsumerThread(bootstrapServer, groupID, topic, offsetManager, minBatchSize));
+        for (int i = 0; i < Integer.parseInt(consumerProperties.getProperty("number.of.consumers")); i++) {
+            consumers.add(new ConsumerThread(consumerProperties, database));
         }
 
+        // assign the list of consumer to the group consumer
         consumerGroup.assignListConsumers(consumers);
+
+        // start run all conumser of group
         consumerGroup.run();
     }
 }
-
-// need use template for message object
