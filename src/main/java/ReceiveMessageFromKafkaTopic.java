@@ -1,4 +1,4 @@
-import common.MySQLDatabase;
+import database.MySQLDatabase;
 import kafka.consumerClient.Consumer;
 import kafka.consumerClient.ConsumerGroup;
 import kafka.consumerClient.ConsumerThread;

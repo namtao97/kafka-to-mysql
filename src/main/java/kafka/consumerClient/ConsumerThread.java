@@ -1,6 +1,6 @@
 package kafka.consumerClient;
 
-import common.Database;
+import database.Database;
 import common.MessageObject;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;

@@ -1,6 +1,6 @@
 package kafka.consumerClient;
 
-import common.Database;
+import database.Database;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;

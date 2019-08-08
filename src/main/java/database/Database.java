@@ -1,5 +1,6 @@
-package common;
+package database;
 
+import common.MessageObject;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.sql.SQLException;
