@@ -37,7 +37,7 @@ public class MySQLDatabase implements Database {
     public void insertMessageToDB(List<ConsumerRecord<String, MessageObject>> records) throws SQLException {
         Connection connection = db.getConnection();
 
-        String query = "INSERT INTO `message`(`msg`, `time`) VALUE (?, ?)";
+        String query = "INSERT IGNORE INTO `message`(`partition`, `offset`, `msg`, `time`) VALUE (?, ?, ?, ?)";
         PreparedStatement preparedStatementInsert = connection.prepareStatement(query);
 
         ConsumerRecord<String, MessageObject> lastRecord = null;
@@ -46,8 +46,10 @@ public class MySQLDatabase implements Database {
         for (ConsumerRecord<String, MessageObject> record : records) {
             logger.info("Key: " + record.key() + ", Value: " + record.value() + " - Partition: " + record.partition() + ", Offset: " + record.offset()) ;
 
-            preparedStatementInsert.setString(1, record.value().getMessage());
-            preparedStatementInsert.setLong(2, record.value().getTime());
+            preparedStatementInsert.setInt(1, record.partition());
+            preparedStatementInsert.setLong(2, record.offset());
+            preparedStatementInsert.setString(3, record.value().getMessage());
+            preparedStatementInsert.setLong(4, record.value().getTime());
             preparedStatementInsert.addBatch();
 
             if (offsetMap.get(record.partition()) == null || offsetMap.get(record.partition()) < record.offset()) {
